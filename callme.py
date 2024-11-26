@@ -24,22 +24,33 @@ print(user.nunique())
 print(user.nunique() - user_missed_call.nunique())
 
 # Agrupación de llamadas perdidas por usuarios. 
-data_group = data[data['operator_id'].isin(user_missed_call)].groupby(['operator_id', 'is_missed_call']).count().reset_index()
+data_group = data[data['operator_id'].isin(user_missed_call)].groupby(['operator_id', 'is_missed_call']).sum().reset_index()
 print(data_group.head())
-data_missed_call = data_group[data_group['is_missed_call'] == True]['user_id'].reset_index(drop=True).to_frame()
+data_missed_call = data_group[data_group['is_missed_call'] == True][['user_id', 'calls_count']].reset_index(drop=True)
 print(data_missed_call.head())
 # Diagrama de caja y bigotes
-plt.boxplot(data_missed_call['user_id'])
+plt.boxplot(data_missed_call['calls_count'])
 plt.close()
-data_missed_call['user_id'].hist()
+data_missed_call['calls_count'].hist()
 plt.close()
 
-print(data_missed_call['user_id'].mean())
+print(data_missed_call['calls_count'].mean())
 ### Revisar si se debe aplicar una prueba estadistica para definir como ineficientes a los operadores que estan en los extremos
-# La metrica fundamental para el análisis se relaciona con las llamdas perdidas dde los operadores, por lo que se 
-#data['is_missed_call'].hist()
+# La metrica fundamental para el análisis se relaciona con las llamadas perdidas de los operadores, por lo que se 
+# Percentiles, para definir el límite para los datos desde donde se considera ineficiente a un operador se tomará el percentil 95, todo valor que se ubique sobre este se considerará ineficiente.
+print('El límite para llamadas perdidas será: '+ str(np.percentile(data_missed_call['calls_count'],95)))
 
+### Tiempo de espera.
+data['standby'] = data['total_call_duration'] - data['call_duration']
+display(data.head())
+print(data['standby'].max())
+plt.boxplot(data['standby'])
+plt.close()
+data['standby'].hist()
+plt.close()
 
-
-
-
+print(np.percentile(data['standby'],95))
+data_filtered = data[data['standby'] < np.percentile(data['standby'],95)]
+data_filtered['standby'].hist()
+plt.close()
+plt.boxplot(data_filtered['standby'])
