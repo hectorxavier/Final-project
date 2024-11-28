@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
+from scipy import stats as st
 
 clients = pd.read_csv('files/telecom_clients_us.csv')
 clients.info()
@@ -14,7 +15,10 @@ display(clients.head())
 display(data[data['operator_id'].isnull()])
 # Se procederá a eliminar los registros con valores nulos en la columna 'operator_id', pues al tratarse de la columna de interes no tiene razones para mantener información que no tenga datos en ese campo.
 data.dropna(inplace = True)
-
+# Se procederá a eliminar los registros con valores duplicados
+print(data[data.duplicated()])
+data.drop_duplicates(inplace=True)
+print(data[data.duplicated()])
 #Definir el número de usuarios que no tiene llamadas perdidas. El objetivo es limitar la muestra a los usuarios a los que tiene llamadas perdidas para no sesgar la media de estos valores, para el tiempo de espera se integrará la información.
 
 user_missed_call = data[data['is_missed_call'] == True]['operator_id'].drop_duplicates()
@@ -43,14 +47,32 @@ print('El límite para llamadas perdidas será: '+ str(np.percentile(data_missed
 ### Tiempo de espera.
 data['standby'] = data['total_call_duration'] - data['call_duration']
 display(data.head())
+print(data['standby'].mean())
 print(data['standby'].max())
 plt.boxplot(data['standby'])
 plt.close()
 data['standby'].hist()
 plt.close()
 
-print(np.percentile(data['standby'],95))
-data_filtered = data[data['standby'] < np.percentile(data['standby'],95)]
+print(np.percentile(data['standby'],90))
+data_filtered = data[data['standby'] < np.percentile(data['standby'],90)]
 data_filtered['standby'].hist()
 plt.close()
 plt.boxplot(data_filtered['standby'])
+## Con el dataframe de información filtrada se mantiene varios valores que se pueden considerar extremos, se realizará un nuevo filtro.
+## Si se excluye el 30% de las observaciones se nota que los valores mejor distribuidos, si embargo, excluir esa cantidad de datos es muy alta. Aun así, se puede aplicarlo para establecer el limite en un valor más cercano a la media.
+data_filtered_new = data[data['standby'] < np.percentile(data['standby'],70)]
+data_filtered_new['standby'].hist()
+plt.close()
+plt.boxplot(data_filtered_new['standby'])
+
+print('El valor medio del tiempo de espera es: ' + str(data_filtered_new['standby'].mean()))
+print('El valor limite del tiempo de espera es: ' + str(data_filtered_new['standby'].max()))
+## Filtro para listar los operadores ineficientes.
+### Por llamadas perdidas.
+operator = data_group[data_group['calls_count']>= np.percentile(data_missed_call['calls_count'],95)]['operator_id'].reset_index(drop = True)
+print(operator)
+### Por tiempo de espera
+call_waiting = data[data['standby'] >= data_filtered_new['standby'].max()]['operator_id'].drop_duplicates().reset_index(drop = True)
+print(call_waiting)
+# Prueba de hipótesis sobre el tiempo de espera.
