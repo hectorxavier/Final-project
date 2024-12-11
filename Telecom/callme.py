@@ -4,10 +4,10 @@ from scipy import stats
 import matplotlib.pyplot as plt
 from scipy import stats as st
 
-clients = pd.read_csv('files/telecom_clients_us.csv')
+clients = pd.read_csv('Telecom/files/telecom_clients_us.csv')
 clients.info()
 
-data = pd.read_csv('files/telecom_dataset_us.csv')
+data = pd.read_csv('Telecom/files/telecom_dataset_us.csv')
 data.info()
 display(data.head())
 display(clients.head())
