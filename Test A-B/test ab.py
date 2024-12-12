@@ -1,13 +1,14 @@
 import pandas as pd
 import numpy as np
 from scipy import stats
-import matplotlib.pyplot as plt
 from scipy import stats as st
+import matplotlib.pyplot as plt
+import math as mth
 
-mkt_events = pd.read_csv('TestA-B/files/ab_project_marketing_events_us.csv')
-new_users = pd.read_csv('TestA-B/files/final_ab_new_users_upd_us.csv')
-events = pd.read_csv('TestA-B/files/final_ab_events_upd_us.csv')
-participants = pd.read_csv('TestA-B/files/final_ab_participants_upd_us.csv')
+mkt_events = pd.read_csv('Test A-B/files/ab_project_marketing_events_us.csv')
+new_users = pd.read_csv('Test A-B/files/final_ab_new_users_upd_us.csv')
+events = pd.read_csv('Test A-B/files/final_ab_events_upd_us.csv')
+participants = pd.read_csv('Test A-B/files/final_ab_participants_upd_us.csv')
 
 mkt_events.info()
 display(mkt_events)
@@ -77,7 +78,10 @@ print(events['event_dt'].min()) #Prueba de la fecha mínima de los registros
 print(events['event_dt'].max()) #Prueba de la fecha máxima de los registros
 events['day'] = events['event_dt'].dt.weekday
 print(events.head())
-events['day'].hist(alpha=0.5)
+
+event_day_group = events.groupby('day').count().reset_index()
+print(event_day_group.head)
+event_day_group.plot.bar(x = 'day', y = 'user_id')
 plt.close()
 
 print(participants[(participants['group'] == 'A') & (participants['ab_test'] == 'recommender_system_test')])
@@ -128,4 +132,64 @@ funnel_a = funnel(group_a_pivot)
 funnel_b = funnel(group_b_pivot)
 # Se ve incremento en la conversión de la visitas a la página de los productos, agregar al carrito y realiza la compra.
 
+def funnel2 (group):
+    step_1 = ~group['product_page'].isna()
+    step_2 = step_1 & (group['product_cart'] > group['product_page'])
+    step_3 = step_2 & (group['purchase'] > group['product_cart'])
+
+    n_product_page = group[step_1].shape[0]
+    n_product_cart = group[step_2].shape[0]
+    n_purchase = group[step_3].shape[0]
+    return n_product_page, n_product_cart, n_purchase
+
+n_product_page_a, n_product_cart_a, n_purchase_a = funnel2(group_a_pivot)
+n_product_page_b, n_product_cart_b, n_purchase_b = funnel2(group_b_pivot)
+
 # Prueba de hipótesis de proporciones.
+alpha = 0.5
+
+purchases = np.array([n_purchase_a, n_purchase_b])
+cart = np.array([n_product_cart_a, n_product_cart_b])
+visit = np.array([n_product_page_a, n_product_page_b])
+
+# Prueba para proporciones product_card → purchase
+p1 = purchases[0]/cart[0]
+
+p2 = purchases[1]/cart[1]
+
+p_combined = (purchases[0] + purchases[1]) / (cart[0] + cart[1])
+
+difference = p1 - p2
+
+z_value = difference / mth.sqrt(p_combined * (1 - p_combined) * (1/cart[0] + 1/cart[1]))
+distr = st.norm(0, 1)
+
+p_value = (1 - distr.cdf(abs(z_value))) * 2
+
+print('p-value: ', p_value)
+
+if (p_value < alpha):
+    print("Rechazar la hipótesis nula: hay una diferencia significativa entre las proporciones")
+else:
+    print("No se pudo rechazar la hipótesis nula: no hay razón para pensar que las proporciones son diferentes")
+
+# Prueba para proporciones product_page → product_card
+p1 = cart[0]/visit[0]
+
+p2 = cart[1]/visit[1]
+
+p_combined = (cart[0] + cart[1]) / (visit[0] + visit[1])
+
+difference = p1 - p2
+
+z_value = difference / mth.sqrt(p_combined * (1 - p_combined) * (1/visit[0] + 1/visit[1]))
+distr = st.norm(0, 1)
+
+p_value = (1 - distr.cdf(abs(z_value))) * 2
+
+print('p-value: ', p_value)
+
+if (p_value < alpha):
+    print("Rechazar la hipótesis nula: hay una diferencia significativa entre las proporciones")
+else:
+    print("No se pudo rechazar la hipótesis nula: no hay razón para pensar que las proporciones son diferentes")
