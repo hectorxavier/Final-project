@@ -77,11 +77,12 @@ print(participants['user_id'].nunique())
 print(events['event_dt'].min()) #Prueba de la fecha mínima de los registros
 print(events['event_dt'].max()) #Prueba de la fecha máxima de los registros
 events['day'] = events['event_dt'].dt.weekday
+events['date'] = events['event_dt'].dt.date
 print(events.head())
 
-event_day_group = events.groupby('day').count().reset_index()
+event_day_group = events.groupby('date').count().reset_index()
 print(event_day_group.head)
-event_day_group.plot.bar(x = 'day', y = 'user_id')
+event_day_group.plot.line(x = 'date', y = 'user_id')
 plt.close()
 
 print(participants[(participants['group'] == 'A') & (participants['ab_test'] == 'recommender_system_test')])
