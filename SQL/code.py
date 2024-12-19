@@ -53,14 +53,38 @@ display(publisher)
 
 # Identifica al autor que tiene la más alta calificación promedio del libro: mira solo los libros con al menos 50 calificaciones.
 # query 
-query = ''' SELECT AVG(rating) AS avg, COUNT(title) AS books_ratings
-            FROM ratings
-              INNER JOIN books ON books.book_id = ratings.book_id
-            WHERE books_ratings > 50
-            GROUP BY book_id
-            ORDER BY books_ratings DESC
+query = ''' SELECT 
+              
+              books.title AS title,
+              books.book_id AS books_id,
+              books.author_id AS author,
+              AVG(ratings.rating) AS avg
+            FROM books
+              INNER JOIN ratings ON ratings.book_id = books.book_id
+              INNER JOIN authors ON authors.author_id = books.author_id
+            GROUP BY books_id
+            HAVING 
+              COUNT(title) > 50
+            ORDER BY avg DESC
             LIMIT 5
         '''
 
 author_rat = pd.io.sql.read_sql(query, con = engine)
 display(author_rat)
+
+# Encuentra el número promedio de reseñas de texto entre los usuarios que calificaron más de 50 libros.
+query = ''' SELECT
+              SUM(SUBQUERY.rev) / SUM(SUBQUERY.user) AS avg_review
+            FROM 
+              (SELECT
+                COUNT(reviews.text) AS rev, COUNT(DISTINCT reviews.username) AS user
+              FROM reviews
+                INNER JOIN ratings ON ratings.username = reviews.username
+              GROUP BY
+                reviews.username
+              HAVING
+                COUNT(ratings.book_id) > 50) AS SUBQUERY
+        '''
+
+reviews = pd.io.sql.read_sql(query, con = engine)
+display(reviews)

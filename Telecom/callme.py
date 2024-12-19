@@ -83,8 +83,8 @@ print('Valor p:', results.pvalue)
 
 ### Según los resultados se puede conluir que existe un 40% de operadores que no es eficaz dentro de la empresa. Se validará el número llamadas que recibe cada uno, para confirmar que la pca eficacia se debe a los operadores a una mala distribución de las llamadas.
 data_inef_operator = data[data['operator_id'].isin(operator)][['operator_id', 'calls_count']].groupby('operator_id').sum()
-print(data_inf_operator.min())
-print(data_inf_operator.max())
+print(data_inef_operator.min())
+print(data_inef_operator.max())
 data_efic_operator = data[~(data['operator_id'].isin(operator))][['operator_id', 'calls_count']].groupby('operator_id').sum()
 print(data_efic_operator.max())
 
